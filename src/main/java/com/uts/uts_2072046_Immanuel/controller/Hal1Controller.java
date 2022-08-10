@@ -4,9 +4,7 @@ import com.uts.uts_2072046_Immanuel.HelloApplication;
 import com.uts.uts_2072046_Immanuel.dao.MovieDao;
 import com.uts.uts_2072046_Immanuel.dao.UserDao;
 import com.uts.uts_2072046_Immanuel.dao.WatchListDao;
-import com.uts.uts_2072046_Immanuel.entity.Movie;
-import com.uts.uts_2072046_Immanuel.entity.User;
-import com.uts.uts_2072046_Immanuel.entity.Watchlist;
+import com.uts.uts_2072046_Immanuel.entity.*;
 import com.uts.uts_2072046_Immanuel.util.MyConnection;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -31,24 +29,24 @@ import java.util.Map;
 
 public class Hal1Controller {
     public ComboBox cmbGenre;
-    public ListView<User> lvUser;
-    public TableView<Movie> table1;
-    public TableView<Watchlist> table2;
+    public ListView<UserEntity> lvUser;
+    public TableView<MovieEntity> table1;
+    public TableView<WatchlistEntity> table2;
     public TableColumn movieTitle;
     public TableColumn movieGenre;
     public TableColumn movieDurasi;
     public TableColumn watchlistTitle;
-    public TableColumn<Watchlist, String> watchlistLastWatch;
-    public TableColumn<Watchlist, String> watchlistFavorite;
+    public TableColumn<WatchlistEntity, String> watchlistLastWatch;
+    public TableColumn<WatchlistEntity, String> watchlistFavorite;
 
-    private ObservableList<Movie> movies;
-    private ObservableList<User> users;
-    private ObservableList<Watchlist> watchlists;
+    private ObservableList<MovieEntity> movies;
+    private ObservableList<UserEntity> users;
+    private ObservableList<WatchlistEntity> watchlists;
 
     public void refresh(){
 
         UserDao userDao = new UserDao();
-        users = userDao.getData();
+        users = FXCollections.observableArrayList(userDao.getData());
         lvUser.setItems(users);
 
     }
@@ -62,7 +60,7 @@ public class Hal1Controller {
         ObservableList<String> genreFilter = FXCollections.observableArrayList("All","Action",
                 "Musical","Comedy","Animated","Fantasy","Drama","Mystery","Thriller","Horror");
         MovieDao movieDao = new MovieDao();
-        movies = movieDao.getData();
+        movies = FXCollections.observableArrayList(movieDao.getData());
         cmbGenre.setItems(genreFilter);
         cmbGenre.setValue("All");
         table1.setItems(movies);
@@ -72,15 +70,16 @@ public class Hal1Controller {
 
 //      watchlist
         WatchListDao watchListDao = new WatchListDao();
-        watchlists = watchListDao.getData();
+        watchlists = FXCollections.observableArrayList(watchListDao.getData());
+
         table2.setItems(watchlists);
-        watchlistTitle.setCellValueFactory(new PropertyValueFactory<>("movie"));
+        watchlistTitle.setCellValueFactory(new PropertyValueFactory<>("movieByMovieIdMovie"));
         watchlistLastWatch.setCellValueFactory(data -> new SimpleStringProperty(
                 String.valueOf(data.getValue().getLastWatch()) + " / " +
-                        data.getValue().getMovie().getDurasi())
+                        data.getValue().getMovieByMovieIdMovie().getDurasi())
         );
         watchlistFavorite.setCellValueFactory(data -> new SimpleStringProperty(
-                data.getValue().toString()));
+                data.getValue().getFavorite()));
     }
 
     public void AddUserAction(ActionEvent actionEvent) throws IOException {
@@ -102,7 +101,7 @@ public class Hal1Controller {
         movies.clear();
         MovieDao movieDao = new MovieDao();
         if (cmbGenre.getValue() == "All"){
-            movies = movieDao.getData();
+            movies = FXCollections.observableArrayList(movieDao.getData());
         } else {
             String filterMovie = String.valueOf(cmbGenre.getValue());
             movies.addAll(movieDao.filterMovie(filterMovie));
@@ -113,15 +112,13 @@ public class Hal1Controller {
 
     public void DelUserAction(ActionEvent actionEvent) {
 
-        User selected = lvUser.getSelectionModel().getSelectedItem();
-        int hasil = new UserDao().delData(selected);
+        UserEntity selected = lvUser.getSelectionModel().getSelectedItem();
+        System.out.println(selected);
+        UserDao userDao = new UserDao();
+        userDao.delData(selected);
         refresh();
-        if (hasil > 0){
-            Alert alert = new Alert(Alert.AlertType.INFORMATION,"Berhasil delete");
-            alert.showAndWait();
-        }
         WatchListDao watchListDao = new WatchListDao();
-        watchlists = watchListDao.getData();
+        watchlists = FXCollections.observableArrayList(watchListDao.getData());
         table2.setItems(watchlists);
 
     }
@@ -146,8 +143,8 @@ public class Hal1Controller {
 
         watchlists.clear();
         WatchListDao watchListDao = new WatchListDao();
-        User user = lvUser.getSelectionModel().getSelectedItem();
-        watchlists.addAll(watchListDao.filterUser(user.getIdUser()));
+        UserEntity user = lvUser.getSelectionModel().getSelectedItem();
+        watchlists.addAll(watchListDao.filterUser(user));
         table2.setItems(watchlists);
 
     }
